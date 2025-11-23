@@ -10,7 +10,7 @@ const https = require('https'),
     ActivityType = {
         "boxing": {
             "id": 8,
-            "name": "Boxing",
+            "name": "BOXING",
             "displayText": "Boxing",
             "preference": 3
         },
@@ -20,53 +20,29 @@ const https = require('https'),
             "displayText": "HRX WORKOUT",
             "preference": 1
         },
-        "hathaYoga": {
-            "id": 40,
-            "name": "Hatha Yoga",
-            "displayText": "Hatha Yoga",
+        "dance": {
+            "id": 56,
+            "name": "DANCE FITNESS",
+            "displayText": "Dance",
             "preference": 4
         },
-        "kettleBell": {
-            "id": 14,
-            "name": "Kettlebell",
-            "displayText": "Kettlebell",
-            "preference": 8
-        },
-        "others": {
-            "id": 1,
-            "name": "Others",
-            "displayText": "Others",
-            "preference": 9
-        },
-        "powerYoga": {
-            "id": 48,
-            "name": "Power Yoga",
-            "displayText": "Power Yoga",
+        "burn": {
+            "id": 66,
+            "name": "BURN",
+            "displayText": "Burn",
             "preference": 5
         },
-        "prowl": {
-            "id": 46,
-            "name": "Prowl",
-            "displayText": "Prowl",
+        "yoga": {
+            "id": 5,
+            "name": "EVOLVE YOGA",
+            "displayText": "Yoga",
             "preference": 6
         },
-        "running": {
-            "id": 38,
-            "name": "Running",
-            "displayText": "Running",
-            "preference": 7
-        },
-        "snc": {
-            "id": 9,
-            "name": "S & C",
-            "displayText": "S & C",
+        "strength": {
+            "id": 69,
+            "name": "ADIDAS STRENGTH+",
+            "displayText": "Strength",
             "preference": 2
-        },
-        "zumba": {
-            "id": 7,
-            "name": "Zumba",
-            "displayText": "Zumba",
-            "preference": 10
         }
     };
 
@@ -95,16 +71,13 @@ const HTTP_POST = "POST",
 /*
 Cure.fit requires slot in the following format
  */
-const PREFERRED_SLOTS = ['07:00:00', '08:00:00', '09:00:00'];
-/*
-* You will have to figure the id of your preferred center
-* You will get it from centerInfoMap object as a part of response of `api/cult/classes/` API
-* */
-const PREFERRED_CENTER = 1515;
+const PREFERRED_SLOTS = config.preferredSlots || ['07:00:00', '08:00:00', '09:00:00'];
+const PREFERRED_CENTER = config.preferredCenter || 1515;
+const PREFERRED_WORKOUT_NAME = config.preferredWorkout || "HRX WORKOUT";
 
-
-//My preferred activities
-const PREFERRED_CLASSES_IN_ORDER = [ActivityType.hrx];
+const PREFERRED_CLASSES_IN_ORDER = Object.values(ActivityType).filter(
+    activity => activity.name === PREFERRED_WORKOUT_NAME
+);
 
 function hasBookingForDate(classesForDay) {
     for (let timeSlot of classesForDay.classByTimeList) {
@@ -136,7 +109,7 @@ co(function* () {
         if (slots.length > 0) {
             console.log(`Found HRX class at ${slot} on ${date}`);
             console.log(`Class ID: ${slots[0].id}, Available seats: ${slots[0].availableSeats}`);
-            // yield bookClass(slots[0].id);
+            yield bookClass(slots[0].id);
             console.log("Yay! Class booked successfully! 🎉");
             break;
         }
@@ -157,8 +130,12 @@ function* bookClass(activityID) {
 }
 
 function* makeAPICall(request, host, path, method, headers) {
-    headers['User-Agent'] = 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Mobile Safari/537.36';
-    headers['referer'] = 'https://www.cult.fit/me/profile';
+    if (config.userAgent) {
+        headers['User-Agent'] = config.userAgent;
+    }
+    if (config.referer) {
+        headers['referer'] = config.referer;
+    }
     let httpParams = {
         host: host,
         path: path,
