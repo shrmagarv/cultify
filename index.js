@@ -1,6 +1,5 @@
 "use strict";
-const https = require('https'),
-    config = require('./config'),
+const config = require('./config'),
     /*
     Maintaining a list of activities and my preference
     The id field is the workoutId which part of classes object as a response of `api/cult/classes/` API
@@ -137,53 +136,37 @@ async function bookClass(activityID) {
     return await makeAPICall({}, CURE_FIT_HOST, "/api/cult/class/" + activityID + "/book", HTTP_POST, commonHeaders);
 }
 
-function makeAPICall(request, host, path, method, headers) {
+async function makeAPICall(request, host, path, method, headers) {
     if (config.userAgent) {
         headers['User-Agent'] = config.userAgent;
     }
     if (config.referer) {
         headers['referer'] = config.referer;
     }
-    let httpParams = {
-        host: host,
-        path: path,
+
+    const url = `https://${host}${path}`;
+    const options = {
         method: method,
         headers: headers
     };
-    return new Promise(function (resolve, reject) {
-        try {
-            let post_req = https.request(httpParams, function (res) {
-                res.setEncoding('utf8');
-                let responseStatus = parseInt(res.statusCode);
-                let response = '';
 
-                res.on('data', function (chunk) {
-                    response += chunk;
-                });
-                res.on('end', function () {
-                    let output = (response.length === 0) ? '' : (isResponseJSON(res) ? JSON.parse(response) : response);
-                    if (responseStatus !== 200) {
-                        reject(response);
-                    }
-                    return resolve(output);
-                });
-                res.on('error', function (e) {
-                    return reject(e);
-                });
-            });
-            post_req.on('error', function (e) {
-                return reject(e);
-            });
-            post_req.write(JSON.stringify(request));
-            post_req.end();
-        } catch (error) {
-            return reject(error);
-        }
-    });
-}
+    if (method === 'POST') {
+        options.body = JSON.stringify(request);
+    }
 
-function isResponseJSON(response) {
-    return response.headers['content-type'] === 'application/json; charset=utf-8';
+    const response = await fetch(url, options);
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `HTTP ${response.status}`);
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+        return await response.json();
+    }
+
+    return await response.text();
 }
 
 function getSlots(classesForDay, slot, classTypes) {

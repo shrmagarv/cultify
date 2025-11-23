@@ -40,6 +40,7 @@ Cultify is an automation tool that books fitness classes at Cult.fit centers. It
 
 - Active Cult.fit membership
 - GitHub account
+- Node.js 18+ (for local testing only)
 
 ## Quick Start (Recommended)
 
