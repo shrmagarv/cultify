@@ -64,7 +64,6 @@ if (process.env.CURL_COMMAND) {
     );
 }
 
-// Add optional booking preferences from environment
 config.preferredCenter = process.env.PREFERRED_CENTER ? parseInt(process.env.PREFERRED_CENTER) : null;
 config.preferredSlots = process.env.PREFERRED_SLOTS ? process.env.PREFERRED_SLOTS.split(',') : null;
 config.preferredWorkout = process.env.PREFERRED_WORKOUT || null;

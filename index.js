@@ -46,10 +46,6 @@ const https = require('https'),
         }
     };
 
-/*
-* st, at and osname are compulsory headers cure.fit expects.
-* You will see it being sent in each and every API request
-* */
 const commonHeaders = {
     "accept": "application/json",
     "apikey": config.apiKey,
@@ -68,10 +64,8 @@ const URI = {
 const HTTP_POST = "POST",
     HTTP_GET = "GET";
 
-/*
-Cure.fit requires slot in the following format
- */
-const PREFERRED_SLOTS = config.preferredSlots || ['07:00:00', '08:00:00', '09:00:00'];
+
+const PREFERRED_SLOTS = config.preferredSlots || ['07:00:00', '08:00:00', '09:00:00', '19:00', '20:00', '21:00', '16:00', '17:00'];
 const PREFERRED_CENTER = config.preferredCenter || 1515;
 const PREFERRED_WORKOUT_NAME = config.preferredWorkout || "HRX WORKOUT";
 
@@ -116,7 +110,7 @@ co(function* () {
     }
     
     if (slots.length === 0) {
-        console.log(`No HRX classes available between 7-9 AM on ${date}`);
+        console.log(`No HRX classes available on ${date}`);
     }
 }).then(function () {
 }, function (error) {
