@@ -638,3 +638,7 @@ For issues, questions, or feature requests:
 ## Acknowledgments
 
 Built for Cult.fit members who want automated booking. Not affiliated with or endorsed by Cult.fit.
+
+## Inspired by:
+https://medium.com/@nobrains/how-i-automated-booking-my-cult-classes-cbc568f05cc8
+https://github.com/nobrains/CureFit
