@@ -67,7 +67,8 @@ const HTTP_POST = "POST",
 
 const PREFERRED_SLOTS = config.preferredSlots || ['07:00:00', '08:00:00', '09:00:00', '19:00', '20:00', '21:00', '16:00', '17:00'];
 const PREFERRED_CENTER = config.preferredCenter || 1515;
-const PREFERRED_WORKOUT_NAME = config.preferredWorkout || "HRX WORKOUT";
+const PREFERRED_WORKOUT_NAME = config.preferredWorkout || "BOXING";
+const ENABLE_WAITLIST = config.enableWaitlist !== false;
 
 const PREFERRED_CLASSES_IN_ORDER = Object.values(ActivityType).filter(
     activity => activity.name === PREFERRED_WORKOUT_NAME
@@ -92,25 +93,37 @@ co(function* () {
     let classes = yield makeAPICall({}, CURE_FIT_HOST, URI.GET_CLASSES, HTTP_GET, commonHeaders);
     let date = classes.days[classes.days.length - 1].id;
     
+    console.log(`Booking for ${date}`);
+    
     if (hasBookingForDate(classes.classByDateMap[date])) {
-        console.log(`You already have a class booked on ${date}. Skipping booking.`);
+        console.log(`Already booked on ${date}. Skipping.`);
         return;
     }
     
     let slots = [];
+    
     for (let slot of PREFERRED_SLOTS) {
         slots = getSlots(classes.classByDateMap[date], slot, PREFERRED_CLASSES_IN_ORDER);
+        
         if (slots.length > 0) {
-            console.log(`Found HRX class at ${slot} on ${date}`);
-            console.log(`Class ID: ${slots[0].id}, Available seats: ${slots[0].availableSeats}`);
-            yield bookClass(slots[0].id);
-            console.log("Yay! Class booked successfully! 🎉");
+            let classInfo = slots[0];
+            console.log(`Found ${PREFERRED_WORKOUT_NAME} at ${slot} on ${date}`);
+            
+            if (classInfo.state === 'WAITLIST_AVAILABLE') {
+                let waitlistCount = classInfo.waitlistInfo && classInfo.waitlistInfo.waitlistedUserCount || 0;
+                console.log(`Joining waitlist (${waitlistCount} people ahead)`);
+            } else {
+                console.log(`Booking (${classInfo.availableSeats} seats available)`);
+            }
+            
+            yield bookClass(classInfo.id);
+            console.log("Class booked successfully!");
             break;
         }
     }
     
     if (slots.length === 0) {
-        console.log(`No HRX classes available on ${date}`);
+        console.log(`No ${PREFERRED_WORKOUT_NAME} classes available on ${date}`);
     }
 }).then(function () {
 }, function (error) {
@@ -201,7 +214,12 @@ function getSlots(classesForDay, slot, classTypes) {
             return false;
         }
         classs.preference = filterElement.preference;
-        return classs.state === 'AVAILABLE'
+        
+        if (ENABLE_WAITLIST) {
+            return classs.state === 'AVAILABLE' || classs.state === 'WAITLIST_AVAILABLE';
+        } else {
+            return classs.state === 'AVAILABLE';
+        }
     })
     .sort(function (class1, class2) {
         return class1.preference - class2.preference;
@@ -211,5 +229,5 @@ function getSlots(classesForDay, slot, classTypes) {
 }
 
 function errorHandler(error) {
-    console.log("Failed! ",error);
+    console.error("Booking failed:", error);
 }

@@ -11,6 +11,7 @@ Cultify is an automation tool that books fitness classes at Cult.fit centers. It
 - Automatic class booking based on preferences
 - Configurable workout types, time slots, and centers
 - Smart booking logic (skips if already booked)
+- Waitlist support (joins queue when classes are full)
 - GitHub Actions integration for automated scheduling
 - Zero server costs (runs on GitHub infrastructure)
 - Secure credential management via environment variables
@@ -139,7 +140,6 @@ Exact name of workout class to book. Case-sensitive.
 **Example:**
 ```bash
 PREFERRED_WORKOUT=HRX WORKOUT
-Can Check Code
 ```
 
 **Available Workouts:**
@@ -154,6 +154,69 @@ Can Check Code
 | BURN | 66 |
 | EVOLVE YOGA | 5 |
 
+#### ENABLE_WAITLIST (Optional)
+
+Enable or disable waitlist booking when classes are full.
+
+**Default:** true
+
+**Example:**
+```bash
+ENABLE_WAITLIST=true
+```
+
+**Behavior:**
+
+When enabled (`true`):
+- Books available classes normally
+- Joins waitlist if class is full
+- Logs waitlist position
+
+When disabled (`false`):
+- Only books classes with available seats
+- Skips full classes
+- Continues to next time slot
+
+**Waitlist Information:**
+
+When joining waitlist, output shows:
+```
+Found HRX WORKOUT class at 07:00:00 on 2025-11-26
+Class ID: 7360552
+Status: WAITLIST (5 people already waitlisted)
+Action: Joining waitlist...
+✓ Class booked successfully!
+```
+
+If you get a spot from waitlist, Cult.fit will notify you via app/email.
+
+#### DEBUG (Optional)
+
+Enable detailed logging to debug booking issues.
+
+**Default:** false
+
+**Example:**
+```bash
+DEBUG=true
+```
+
+**Debug Output:**
+
+Shows all classes at each time slot:
+```
+[DEBUG] Slot 07:00:00: Found 2 classes at center
+  - HRX WORKOUT: AVAILABLE, seats: 2, waitlist: 0
+  - DANCE FITNESS: WAITLIST_AVAILABLE, seats: 0, waitlist: 29
+[DEBUG] After filtering: 1 matching classes
+```
+
+Use debug mode to troubleshoot:
+- Why no classes are found
+- What classes exist at each time slot
+- Waitlist information
+- Filtering logic
+
 ## Usage
 
 ### Local Execution
@@ -165,6 +228,7 @@ CURL_COMMAND=curl 'https://www.cult.fit/api/...' -H 'apikey: ...' -b '...'
 PREFERRED_CENTER=1515
 PREFERRED_SLOTS=07:00:00,08:00:00,09:00:00
 PREFERRED_WORKOUT=HRX WORKOUT
+ENABLE_WAITLIST=true
 ```
 
 **Important:** Remove all backslashes from curl command. It must be single line.
@@ -179,14 +243,23 @@ bun index.js
 
 #### Expected Output
 
+**Available Class:**
 ```
-Found HRX class at 07:00:00 on 2025-11-26
-Class ID: 7360581, Available seats: 2
-Yay! Class booked successfully!
+Found HRX WORKOUT class at 07:00:00 on 2025-11-26
+Class ID: 7360581
+Status: Available (2 seats)
+Class booked successfully!
 ```
 
-Or if already booked:
+**Waitlist:**
+```
+Found HRX WORKOUT class at 07:00:00 on 2025-11-26
+Class ID: 7360552
+Status: Waitlist (5 people waitlisted)
+Class booked successfully!
+```
 
+**Already Booked:**
 ```
 You already have a class booked on 2025-11-26. Skipping booking.
 ```
@@ -224,6 +297,9 @@ Add the following secrets:
 
 - Name: `PREFERRED_WORKOUT`
 - Value: Workout name (e.g., `HRX WORKOUT`)
+
+- Name: `ENABLE_WAITLIST`
+- Value: `true` or `false` (default: `true`)
 
 3. **Enable GitHub Actions**
 
@@ -291,13 +367,23 @@ PREFERRED_CENTER=634
 PREFERRED_WORKOUT=BURN
 ```
 
-### Example 4: Full Customization
+### Example 4: Disable Waitlist
+
+```bash
+CURL_COMMAND=curl '...'
+ENABLE_WAITLIST=false
+```
+
+Only books classes with available seats. Skips full classes.
+
+### Example 5: Full Customization
 
 ```bash
 CURL_COMMAND=curl '...'
 PREFERRED_CENTER=634
 PREFERRED_SLOTS=17:00:00,18:00:00
 PREFERRED_WORKOUT=BOXING BAG WORKOUT
+ENABLE_WAITLIST=true
 ```
 
 ## Troubleshooting
@@ -498,13 +584,17 @@ When tokens expire, update CURL_COMMAND with fresh credentials.
 - Requires valid Cult.fit membership
 - Dependent on Cult.fit API availability
 - Tokens require periodic refresh
+- Waitlist position determined by Cult.fit (first-come-first-served)
+- No guarantee of confirmation from waitlist
 
 ## Contributing
 
 Contributions welcome. Areas for improvement:
 
+- Waitlist monitoring and auto-rebooking when spot opens
 - Notification integrations (email, Slack, etc.)
 - Advanced scheduling strategies
+- Multiple booking preferences with priority
 
 ### Pull Request Process
 
